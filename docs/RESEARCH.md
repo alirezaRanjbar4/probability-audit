@@ -1,0 +1,5 @@
+# Context and alternatives
+
+[ML.NET binary evaluation](https://learn.microsoft.com/en-us/dotnet/machine-learning/resources/metrics) already provides established classifier metrics including log loss; its [binary catalog](https://learn.microsoft.com/en-us/dotnet/api/microsoft.ml.binaryclassificationcatalog) evaluates scored data. [scikit-learn calibration](https://scikit-learn.org/stable/modules/calibration.html) provides reliability curves and calibration methods, and explains Brier/log-loss decomposition and the need for held-out data.
+
+This tool is a small, explicit, file-based C# workflow for reviewing fixed-width reliability-bin counts and Brier/ECE using saved labeled predictions, without runtime ML dependencies. It complements rather than replaces these tools. This is a design choice, not a claim that established .NET libraries lack evaluation capabilities or that demand has been independently measured. It does not fit calibration mappings or train a classifier. See [design](DESIGN.md).
