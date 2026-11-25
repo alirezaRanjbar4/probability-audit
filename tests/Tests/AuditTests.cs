@@ -32,6 +32,51 @@ public sealed class AuditTests : IDisposable
     }
 
     [Fact]
+    public void ComparisonMatchesReorderedIdsAndReportsCandidateMinusReference()
+    {
+        var reference = Input("{\"id\":\"a\",\"probability\":0,\"label\":false}\n{\"id\":\"b\",\"probability\":0.5,\"label\":true}\n");
+        var candidate = Input("{\"id\":\"b\",\"probability\":1,\"label\":true}\n{\"id\":\"a\",\"probability\":0.5,\"label\":false}\n");
+        var before = File.ReadAllBytes(reference); var after = File.ReadAllBytes(candidate);
+        var result = Run("compare", reference, candidate, "--bins", "4");
+        Assert.Equal(0, result.Code);
+        using var json = JsonDocument.Parse(result.Output);
+        var root = json.RootElement;
+        Assert.Equal("candidate minus reference", root.GetProperty("differenceDirection").GetString());
+        Assert.Equal(0.125, root.GetProperty("reference").GetProperty("brierScore").GetDouble(), 12);
+        Assert.Equal(0.125, root.GetProperty("candidate").GetProperty("brierScore").GetDouble(), 12);
+        Assert.Equal(0, root.GetProperty("brierScoreDifference").GetDouble(), 12);
+        Assert.Equal(0.25, root.GetProperty("reference").GetProperty("expectedCalibrationError").GetDouble(), 12);
+        Assert.Equal(0.25, root.GetProperty("candidate").GetProperty("expectedCalibrationError").GetDouble(), 12);
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(before)).ToLowerInvariant(), root.GetProperty("reference").GetProperty("inputSha256").GetString());
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(after)).ToLowerInvariant(), root.GetProperty("candidate").GetProperty("inputSha256").GetString());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("candidate").GetProperty("bins")[0].GetProperty("meanProbability").ValueKind);
+        Assert.Equal(before, File.ReadAllBytes(reference)); Assert.Equal(after, File.ReadAllBytes(candidate));
+        Assert.DoesNotContain("\"id\"", result.Output);
+    }
+
+    [Theory]
+    [InlineData("{\"id\":\"a\",\"probability\":0.4,\"label\":false}")]
+    [InlineData("{\"id\":\"b\",\"probability\":0.4,\"label\":true}")]
+    [InlineData("{\"id\":\"A\",\"probability\":0.4,\"label\":true}")]
+    [InlineData("{\"id\":\"a\",\"probability\":0.4,\"label\":true}\n{\"id\":\"a\",\"probability\":0.4,\"label\":true}")]
+    public void ComparisonRejectsMismatchesAndDuplicateIdsWithoutOutput(string candidate)
+    {
+        var reference = Input("{\"id\":\"a\",\"probability\":0.5,\"label\":true}");
+        var result = Run("compare", reference, Input(candidate));
+        Assert.Equal(2, result.Code); Assert.Empty(result.Output); Assert.NotEmpty(result.Error);
+    }
+
+    [Fact]
+    public void ComparisonDifferenceHasExplicitSign()
+    {
+        var a = Input("{\"id\":\"a\",\"probability\":0.5,\"label\":true}");
+        var b = Input("{\"id\":\"a\",\"probability\":1,\"label\":true}");
+        var result = App.Compare(a, b, 2);
+        Assert.Equal(-0.25, result.BrierScoreDifference, 12);
+        Assert.Equal(-0.5, result.ExpectedCalibrationErrorDifference, 12);
+    }
+
+    [Fact]
     public void EmptyBinsAreExplicitAndBothEndpointsWork()
     {
         var result = App.Inspect(Input("{\"id\":\"a\",\"probability\":0,\"label\":false}\n{\"id\":\"b\",\"probability\":1,\"label\":true}\n"), 4);

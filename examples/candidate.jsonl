@@ -1,0 +1,4 @@
+{"id":"d","probability":0.25,"label":false}
+{"id":"b","probability":0.75,"label":true}
+{"id":"c","probability":1,"label":true}
+{"id":"a","probability":0,"label":false}
