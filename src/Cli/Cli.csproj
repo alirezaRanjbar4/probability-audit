@@ -6,7 +6,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>probability-audit</ToolCommandName>
     <PackageId>ProbabilityAudit.Tool</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>alirezaRanjbar4</Authors>
     <Description>Offline binary probability reliability bins and Brier scoring for labeled model predictions.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
